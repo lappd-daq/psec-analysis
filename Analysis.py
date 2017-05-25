@@ -24,6 +24,7 @@ def plot_event(data,ch, ped, event=0, path=None):
     plt.title('Channel:Event | {}:{}'.format(ch, event))
     plt.xlabel('Time (100 ps)')
     plt.ylabel('ADC Counts')
+    plt.gca().invert_yaxis()
     plt.show()
     if path:
         directory = 'figs/{}'.format(path)
