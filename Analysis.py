@@ -35,7 +35,7 @@ def load_data(filename, num_events):
 
     return (np.asarray(channel_data), ped)
 
-def plot_event(data, ped, ch, event=0, path=None):
+def plot_event(data, ped, ch, event=0):
     '''
     Simple plot tool for quick use the data array
 
