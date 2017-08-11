@@ -12,7 +12,9 @@ This code serves as a simple parsing tool for the PSEC data created by Dr. Eric 
 
 ## Data Format
 
-Eric's data output is laid out in a text file with the following format // TODO
+Eric's data output is laid out in a text file with the following format
+
+![](/figs/layout.png?raw=true)
 
 ## Usage
 
