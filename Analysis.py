@@ -1,11 +1,13 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
 
-NUM_SAMPLES = 256
-NUM_COLS = 33
 
-def load_data(filename, num_events):
+PSEC_CELLS = 256
+N_COLS = 32
+N_CHS = 30
+
+def load_data(filename):
     '''
     Parses the text file for PSEC analysis
 
@@ -25,17 +27,23 @@ def load_data(filename, num_events):
     ped: 2d-array
         An array with the form [Channel, Sample] containing the pedestal data. The channel layout is the same as the data array and there are still 256 samples. Note that the 2nd and 33rd columns of this array are all zeros.
     '''
-    data = np.genfromtxt(filename)
-    ped = data[:NUM_SAMPLES].T
+    raw = np.genfromtxt(filename)[:, 1:]
+    n_events = int(len(raw) / PSEC_CELLS - 1)
+    n_boards = int(len(raw.T) / N_COLS)
 
-    channel_data = [[
-            data[NUM_SAMPLES * (i + 1):(i + 2) * NUM_SAMPLES, ch]
-         for i in range(num_events)
-        ] for ch in range(NUM_COLS)]
+    indices = [range(n_boards), range(n_events), range(PSEC_CELLS)]
+    ch_names = ['{:d}'.format(n+1) for n in range(N_CHS)]
+    cols = ['Wrap', *ch_names, 'Meta']
+    data = pd.DataFrame(index=pd.MultiIndex.from_product(indices, names=['Board', 'Event','Sample']), columns=cols)
 
-    return (np.asarray(channel_data), ped)
+    boards = np.array([raw.T[N_COLS * n:N_COLS * (n+1)] for n in range(n_boards)])
+    for b, board in enumerate(boards):
+        data.loc[b] = board[:, PSEC_CELLS:].T
+        data.loc[b, ch_names] = data.loc[b, ch_names].values - np.tile(board[1:-1, :PSEC_CELLS], n_events).T
 
-def plot_event(data, ped, ch, event=0):
+    return data
+
+def plot_event(data, board, event, channel):
     '''
     Simple plot tool for quick use the data array
 
@@ -54,15 +62,23 @@ def plot_event(data, ped, ch, event=0):
         The event to plot (Default=0)
     '''
 
+    import matplotlib.pyplot as plt
+    import collections
+
+    if not isinstance(board, collections.Iterable):
+        board = [board]
+    if not isinstance(event, collections.Iterable):
+        event = [event]
+    if not isinstance(channel, collections.Iterable):
+        channel = [channel]
+
     plt.style.use('seaborn')
     plt.figure()
-
-    plt.plot(data[ch + 1, event] - ped[ch+1], label='Evt:{}'.format(event))
+    plt.title('Board {}, Channel {}, Event {}'.format(board, channel, event))
+    [[[plt.plot(data[str(ch)].loc[b, e].values, label='EBC ({},{},{})'.format(e, b, ch)) for ch in channel] for b in board] for e in event]
     plt.legend()
-    plt.title('Channel:Event | {}:{}'.format(ch, event))
     plt.xlabel('Time (100 ps)')
     plt.ylabel('ADC Counts')
-    plt.gca().invert_yaxis()
     plt.show()
 
 
