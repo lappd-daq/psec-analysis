@@ -7,25 +7,25 @@ PSEC_CELLS = 256
 N_COLS = 32
 N_CHS = 30
 
-def load_data(filename):
+def load_data(filename, save_data=False):
     '''
     Parses the text file for PSEC analysis
 
     Arguments
     ---------
     filename: string
-        the full path to the txt file containing the data
+        the full path to the text file containing the data
 
-    num_events: int
-        The number of events recorded in the data file. If this is too small, data will not be parsed and if it is too large, the parsing will reach EOF prematurely
+    save_data: boolean (optional)
+        If set to True, it will save the loaded data frame into 'filename.xlsx' (default=False)
 
     Returns
     -------
-    data: 3d-array
-        An array with the form [Channel, Event, Sample] containing the event data and metadata. There are 33 channels, the first 2 are timing values. The next 30 are data channels. The last channel is metadata. See form_metadata.cpp in Eric's source code for an explanation of the metadata. There are 'num_events' events. Each event has 256 samples.
+    data: DataFrame
+        A pandas dataframe using a multiindex with levels (board, event, sample) and columns for each channel plus wrap
+        constant and metadata. For example, to get the data from channel 2 on board 0 for events 3 through 5, you would
+        call data['2'].loc[0, 3:5]
 
-    ped: 2d-array
-        An array with the form [Channel, Sample] containing the pedestal data. The channel layout is the same as the data array and there are still 256 samples. Note that the 2nd and 33rd columns of this array are all zeros.
     '''
     raw = np.genfromtxt(filename)[:, 1:]
     n_events = int(len(raw) / PSEC_CELLS - 1)
@@ -41,27 +41,32 @@ def load_data(filename):
         data.loc[b] = board[:, PSEC_CELLS:].T
         data.loc[b, ch_names] = data.loc[b, ch_names].values - np.tile(board[1:-1, :PSEC_CELLS], n_events).T
 
+    if save_data:
+        data.to_excel(filename + '.xlsx')
+
     return data
 
 def plot_event(data, board, event, channel):
     '''
-    Simple plot tool for quick use the data array
+    Simple plot tool for quick use of the data DataFrame. Lists can be used to plot, but all the data will be on the
+    same plot.
 
     Arguments
     ---------
-    data: 3d-array
-        The data array from the load_data command. See that documentation for more information
+    data: DataFrame
+        The data frame from the load_data command. See that documentation for more information
 
-    ped: 2d-array
-        The ped array from the load_data command. See that documentation for more information
+    board: int or list
+        The board/s to plot
 
-    ch: int
-        The channel to plot. Note: this is the actual data channel (eg channel 2 from the psec board would input 2) not the column of the data array.
+    event: int or list
+        The event/s to plot
 
-    event: int, optional
-        The event to plot (Default=0)
+    channel: int or list
+        The channel/s to plot
+
+
     '''
-
     import matplotlib.pyplot as plt
     import collections
 
@@ -80,7 +85,6 @@ def plot_event(data, board, event, channel):
     plt.xlabel('Time (100 ps)')
     plt.ylabel('ADC Counts')
     plt.show()
-
 
 if __name__=='__main__':
     pass
