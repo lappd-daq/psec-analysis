@@ -8,17 +8,18 @@ This code serves as a simple parsing tool for the PSEC data created by Dr. Eric 
 
 - Python 3.4+
 - numpy
-- matplotlib
+- matplotlib (only for plotting)
 
 ## Data Format
 
 Eric's data output is laid out in a text file with the following format
 
-|                            |   0   |     1      |   2-31   | 32       |
-| -------------------------: | :---: | :--------: | :------: | -------- |
-|               **0 to 255** | Count |     0      | Ped data | 0        |
-| **256 to (n+1) x 256 - 1** | Count | Wraparound |   Data   | Metadata |
+|                            |   0   |     1      |   2-31   | 32       | k*32 + 1 | k*32 + (2-31) | k*32 + 32 |
+| -------------------------: | :---: | :--------: | :------: | :--------: | :-----: | :----------: | :-------: |
+|               **0 to 255** | Count |     0      | Ped data | 0        | 0 | Ped data | 0 |
+| **256 to (n+1) x 256 - 1** | Count | Wraparound |   Data   | Metadata | Wraparound | Data | Metadata |
 
+Where n is the event number and k is the board number
 
 The metadata is stored in the 33rd column of each event and has the following values
 
@@ -78,12 +79,12 @@ Value | Name | Description
 ```python
 In [1]: import Analysis as ana
 
-In [2]: data, ped = ana.load_data('data/test.acdc.dat', 50)
+In [2]: data = ana.load_data('data/test2.acdc.dat')
 
-In [3]: ccTimeStampLo = data[32, 2, 37]
+In [3]: ccTimeStampLo = data['Meta'].loc[0, 5, 37] # 0th board, 5th event
 
 In [4]: print(ccTimeStampLo)
 1617
 
-In [5]: plot = ana.plot_event(data, ped, 2, event=25)
+In [5]: plot = ana.plot_event(data, board=0, event=25, channel=2)
 ```
